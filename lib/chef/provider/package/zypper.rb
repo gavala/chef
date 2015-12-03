@@ -37,7 +37,7 @@ class Chef
           candidate_version = current_version = nil
           is_installed = false
           Chef::Log.debug("#{new_resource} checking zypper")
-          status = shell_out_with_timeout("zypper --non-interactive info #{package_name}")
+          status = shell_out_with_timeout!("zypper --non-interactive info #{package_name}")
           status.stdout.each_line do |line|
             case line
             when /^Version: (.+)$/
