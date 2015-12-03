@@ -1248,6 +1248,7 @@ EOM
     end
   end # with versioned cookbooks
 
+
   when_the_chef_server 'has a user' do
     before do
       user 'x', {}
@@ -1294,10 +1295,12 @@ EOM
           file 'members.json', [ 'bar' ]
           file 'nodes/x.json', {}
           file 'org.json', { 'full_name' => 'wootles' }
+          file 'policies/x-1.0.0.json', {}
+          file 'policy_groups/x.json', { 'policies' => { 'x' => { 'revision_id' => '1.0.0' } } }
           file 'roles/x.json', {}
         end
 
-        it 'knife upload / uploads everything' do
+        it 'knife upload / uploads everything', :focus do
           knife('upload /').should_succeed <<EOM
 Updated /acls/groups/blah.json
 Created /clients/x.json
@@ -1311,6 +1314,8 @@ Updated /invitations.json
 Updated /members.json
 Created /nodes/x.json
 Updated /org.json
+Created /policies/x-1.0.0.json
+Created /policy_groups/x.json
 Created /roles/x.json
 EOM
           expect(api.get('association_requests').map { |a| a['username'] }).to eq([ 'foo' ])

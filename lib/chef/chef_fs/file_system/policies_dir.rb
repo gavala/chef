@@ -124,7 +124,7 @@ class Chef
           # again, we will get it again
           @children = nil
 
-          result
+          entry
         end
 
       end
