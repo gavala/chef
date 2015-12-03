@@ -19,7 +19,7 @@
 require 'spec_helper'
 require 'ostruct'
 
-describe Chef::Node do
+describe Chef::Node, :focus do
 
   let(:node) { Chef::Node.new() }
   let(:platform_introspector) { node }
@@ -1247,8 +1247,8 @@ describe Chef::Node do
 
   describe "api model" do
     before(:each) do
-      @rest = double("Chef::REST")
-      allow(Chef::REST).to receive(:new).and_return(@rest)
+      @rest = double("Chef::ServerAPI")
+      allow(Chef::ServerAPI).to receive(:new).and_return(@rest)
       @query = double("Chef::Search::Query")
       allow(Chef::Search::Query).to receive(:new).and_return(@query)
     end
@@ -1264,7 +1264,7 @@ describe Chef::Node do
       end
 
       it "should return a hash of node names and urls" do
-        expect(@rest).to receive(:get_rest).and_return({ "one" => "http://foo" })
+        expect(@rest).to receive(:get).and_return({ "one" => "http://foo" })
         r = Chef::Node.list
         expect(r["one"]).to eq("http://foo")
       end
@@ -1272,14 +1272,19 @@ describe Chef::Node do
 
     describe "load" do
       it "should load a node by name" do
-        expect(@rest).to receive(:get_rest).with("nodes/monkey").and_return("foo")
-        expect(Chef::Node.load("monkey")).to eq("foo")
+        node.from_file(File.expand_path("nodes/test.example.com.rb", CHEF_SPEC_DATA))
+        json = Chef::JSONCompat.to_json(node)
+        parsed = Chef::JSONCompat.parse(json)
+        expect(@rest).to receive(:get).with("nodes/test.example.com").and_return(parsed)
+        serialized_node = Chef::Node.load("test.example.com")
+        expect(serialized_node).to be_a_kind_of(Chef::Node)
+        expect(serialized_node.name).to eql(node.name)
       end
     end
 
     describe "destroy" do
       it "should destroy a node" do
-        expect(@rest).to receive(:delete_rest).with("nodes/monkey").and_return("foo")
+        expect(@rest).to receive(:delete).with("nodes/monkey").and_return("foo")
         node.name("monkey")
         node.destroy
       end
@@ -1289,15 +1294,15 @@ describe Chef::Node do
       it "should update a node if it already exists" do
         node.name("monkey")
         allow(node).to receive(:data_for_save).and_return({})
-        expect(@rest).to receive(:put_rest).with("nodes/monkey", {}).and_return("foo")
+        expect(@rest).to receive(:put).with("nodes/monkey", {}).and_return("foo")
         node.save
       end
 
       it "should not try and create if it can update" do
         node.name("monkey")
         allow(node).to receive(:data_for_save).and_return({})
-        expect(@rest).to receive(:put_rest).with("nodes/monkey", {}).and_return("foo")
-        expect(@rest).not_to receive(:post_rest)
+        expect(@rest).to receive(:put).with("nodes/monkey", {}).and_return("foo")
+        expect(@rest).not_to receive(:post)
         node.save
       end
 
@@ -1305,8 +1310,8 @@ describe Chef::Node do
         node.name("monkey")
         allow(node).to receive(:data_for_save).and_return({})
         exception = double("404 error", :code => "404")
-        expect(@rest).to receive(:put_rest).and_raise(Net::HTTPServerException.new("foo", exception))
-        expect(@rest).to receive(:post_rest).with("nodes", {})
+        expect(@rest).to receive(:put).and_raise(Net::HTTPServerException.new("foo", exception))
+        expect(@rest).to receive(:post).with("nodes", {})
         node.save
       end
 
@@ -1319,8 +1324,8 @@ describe Chef::Node do
         end
         it "should not save" do
           node.name("monkey")
-          expect(@rest).not_to receive(:put_rest)
-          expect(@rest).not_to receive(:post_rest)
+          expect(@rest).not_to receive(:put)
+          expect(@rest).not_to receive(:post)
           node.save
         end
       end
@@ -1364,7 +1369,7 @@ describe Chef::Node do
 
           node.name("picky-monkey")
           allow(node).to receive(:for_json).and_return(data)
-          expect(@rest).to receive(:put_rest).with("nodes/picky-monkey", selected_data).and_return("foo")
+          expect(@rest).to receive(:put).with("nodes/picky-monkey", selected_data).and_return("foo")
           node.save
         end
 
@@ -1398,7 +1403,7 @@ describe Chef::Node do
 
           node.name("falsey-monkey")
           allow(node).to receive(:for_json).and_return(data)
-          expect(@rest).to receive(:put_rest).with("nodes/falsey-monkey", selected_data).and_return("foo")
+          expect(@rest).to receive(:put).with("nodes/falsey-monkey", selected_data).and_return("foo")
           node.save
         end
 
@@ -1421,7 +1426,7 @@ describe Chef::Node do
 
           node.name("picky-monkey")
           allow(node).to receive(:for_json).and_return(data)
-          expect(@rest).to receive(:put_rest).with("nodes/picky-monkey", selected_data).and_return("foo")
+          expect(@rest).to receive(:put).with("nodes/picky-monkey", selected_data).and_return("foo")
           node.save
         end
       end
@@ -1437,12 +1442,12 @@ describe Chef::Node do
         context "and the server supports policyfile attributes in node JSON" do
 
           it "creates the object normally" do
-            expect(@rest).to receive(:post_rest).with("nodes", node.for_json)
+            expect(@rest).to receive(:post).with("nodes", node.for_json)
             node.create
           end
 
           it "saves the node object normally" do
-            expect(@rest).to receive(:put_rest).with("nodes/example-node", node.for_json)
+            expect(@rest).to receive(:put).with("nodes/example-node", node.for_json)
             node.save
           end
         end
@@ -1490,8 +1495,8 @@ describe Chef::Node do
           context "when the node exists" do
 
             it "falls back to saving without policyfile attributes" do
-              expect(@rest).to receive(:put_rest).with("nodes/example-node", node.for_json).and_raise(http_exception)
-              expect(@rest).to receive(:put_rest).with("nodes/example-node", trimmed_node).and_return(@node)
+              expect(@rest).to receive(:put).with("nodes/example-node", node.for_json).and_raise(http_exception)
+              expect(@rest).to receive(:put).with("nodes/example-node", trimmed_node).and_return(@node)
               expect { node.save }.to_not raise_error
             end
 
@@ -1512,15 +1517,15 @@ describe Chef::Node do
             end
 
             it "falls back to saving without policyfile attributes" do
-              expect(@rest).to receive(:put_rest).with("nodes/example-node", node.for_json).and_raise(http_exception)
-              expect(@rest).to receive(:put_rest).with("nodes/example-node", trimmed_node).and_raise(http_exception_404)
-              expect(@rest).to receive(:post_rest).with("nodes", trimmed_node).and_return(@node)
+              expect(@rest).to receive(:put).with("nodes/example-node", node.for_json).and_raise(http_exception)
+              expect(@rest).to receive(:put).with("nodes/example-node", trimmed_node).and_raise(http_exception_404)
+              expect(@rest).to receive(:post).with("nodes", trimmed_node).and_return(@node)
               node.save
             end
 
             it "creates the node without policyfile attributes" do
-              expect(@rest).to receive(:post_rest).with("nodes", node.for_json).and_raise(http_exception)
-              expect(@rest).to receive(:post_rest).with("nodes", trimmed_node).and_return(@node)
+              expect(@rest).to receive(:post).with("nodes", node.for_json).and_raise(http_exception)
+              expect(@rest).to receive(:post).with("nodes", trimmed_node).and_return(@node)
               node.create
             end
           end
