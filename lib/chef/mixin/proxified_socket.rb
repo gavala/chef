@@ -18,7 +18,7 @@
 require 'proxifier'
 
 class Chef
-  class Knife
+  module Mixin
     module ProxifiedSocket
 
       # This looks at the environment variables and leverages Proxifier to

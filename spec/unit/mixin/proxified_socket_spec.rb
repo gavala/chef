@@ -17,14 +17,14 @@
 #
 
 require "spec_helper"
-require "chef/knife/proxified_socket"
+require "chef/mixin/proxified_socket"
 require "proxifier/proxy"
 
 class TestProxifiedSocket
-  include Chef::Knife::ProxifiedSocket
+  include Chef::Mixin::ProxifiedSocket
 end
 
-describe Chef::Knife::ProxifiedSocket do
+describe Chef::Mixin::ProxifiedSocket do
 
   before do
     @original_env = ENV.to_hash

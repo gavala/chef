@@ -28,8 +28,8 @@ class Chef
         require 'socket'
         require 'uri'
         require 'openssl'
-        require_relative 'proxified_socket'
-        include ProxifiedSocket
+        require 'chef/mixin/proxified_socket'
+        include Chef::Mixin::ProxifiedSocket
       end
 
       banner "knife ssl fetch [URL] (options)"
