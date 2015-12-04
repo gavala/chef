@@ -79,14 +79,14 @@ class Chef
               result
             end
           rescue Timeout::Error => e
-            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:children, self, e), "Timeout retrieving children: #{e}"
+            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:children, self, e, "Timeout retrieving children: #{e}")
           rescue Net::HTTPServerException => e
             # 404 = NotFoundError
             if $!.response.code == "404"
               raise Chef::ChefFS::FileSystem::NotFoundError.new(self, $!)
             # Anything else is unexpected (OperationFailedError)
             else
-              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:children, self, e), "HTTP error retrieving children: #{e}"
+              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:children, self, e, "HTTP error retrieving children: #{e}")
             end
           end
         end
@@ -99,24 +99,36 @@ class Chef
           begin
             object = Chef::JSONCompat.parse(file_contents)
           rescue Chef::Exceptions::JSON::ParseError => e
-            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e), "Parse error reading JSON creating child '#{name}': #{e}"
+            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e, "Parse error reading JSON creating child '#{name}': #{e}")
           end
 
           # Create the child entry that will be returned
-          entry = make_child_entry(name, true)
+          result = make_child_entry(name, true)
 
-          # PolicyRevisionEntry handles creating the correct api_path etc.
+          # Normalize the file_contents before post (add defaults, etc.)
+          if data_handler
+            object = data_handler.normalize_for_post(object, result)
+            data_handler.verify_integrity(object, result) do |error|
+              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, nil, "Error creating '#{name}': #{error}")
+            end
+          end
+
+          # POST /api_path with the normalized file_contents
           begin
-            entry.write(file_contents)
+            policy_name, policy_revision = data_handler.name_and_revision(name)
+            rest.post("#{api_path}/#{policy_name}/revisions", object)
           rescue Timeout::Error => e
-            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e), "Timeout creating '#{name}': #{e}"
+            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e, "Timeout creating '#{name}': #{e}")
           rescue Net::HTTPServerException => e
+            # 404 = NotFoundError
             if e.response.code == "404"
               raise Chef::ChefFS::FileSystem::NotFoundError.new(self, e)
+            # 409 = AlreadyExistsError
             elsif $!.response.code == "409"
-              raise Chef::ChefFS::FileSystem::AlreadyExistsError.new(:create_child, self, e), "Failure creating '#{name}': #{path}/#{name} already exists"
+              raise Chef::ChefFS::FileSystem::AlreadyExistsError.new(:create_child, self, e, "Failure creating '#{name}': #{path}/#{name} already exists")
+            # Anything else is unexpected (OperationFailedError)
             else
-              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e), "Failure creating '#{name}': #{e.message}"
+              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e, "Failure creating '#{name}': #{e.message}")
             end
           end
 
@@ -124,7 +136,7 @@ class Chef
           # again, we will get it again
           @children = nil
 
-          entry
+          result
         end
 
       end

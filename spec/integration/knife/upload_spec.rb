@@ -1315,8 +1315,8 @@ Updated /invitations.json
 Updated /members.json
 Created /nodes/x.json
 Updated /org.json
-Created /policies/x-1.0.0.json
 Created /policies/blah-1.0.0.json
+Created /policies/x-1.0.0.json
 Created /policy_groups/x.json
 Created /roles/x.json
 EOM
@@ -1350,27 +1350,55 @@ EOM
           it 'knife upload makes no changes' do
             knife('upload /').should_succeed <<EOM
 Updated /acls/groups/blah.json
+Updated /clients/x.json
+Updated /containers/x.json
+Updated /cookbooks/x
+Updated /data_bags/x
+Updated /data_bags/x/y.json
+Updated /environments/x.json
+Updated /groups/x.json
+Updated /invitations.json
+Updated /members.json
+Updated /nodes/x.json
 Updated /org.json
+Updated /policies/blah-1.0.0.json
+Updated /policies/x-1.0.0.json
+Updated /policy_groups/x.json
+Updated /roles/x.json
 EOM
           end
         end
 
-        context "When the chef server has a slightly different copy of each thing" do
+        context "When the chef server has a slightly different copy of the policy revision" do
+          before do
+            policy 'x', '1.0.0', { 'run_list' => [ 'blah' ] }
+          end
+
+          it "should fail because policies are not updateable" do
+            knife("upload /policies/x-1.0.0.json").should_fail <<EOM
+ERROR: /policies/x-1.0.0.json cannot be updated: policy revisions are immutable once uploaded. If you want to change the policy, create a new revision with your changes.
+EOM
+          end
+        end
+
+        context "When the chef server has a slightly different copy of each thing (except policy revisions)" do
           before do
             # acl_for %w(organizations foo groups blah)
             client 'x', { 'validator' => true }
-            cookbook 'x', '1.0.0', { 'recipes/default.rb' => '' }
+            cookbook 'x', '1.0.0', { 'recipes' => { 'default.rb' => '' } }
             data_bag 'x', { 'y' => { 'a' => 'b' } }
             environment 'x', { 'description' => 'foo' }
             group 'x', { 'groups' => [ 'admin' ] }
             node 'x', { 'run_list' => [ 'blah' ] }
-            policy 'x', '1.0.0', { 'run_list' => [ 'blah' ] }
+            policy 'x', '1.0.0', { }
             policy 'x', '1.0.1', { }
             policy 'y', '1.0.0', { }
-            policy_group 'x', { 'policies' => {
-              'x' => { 'revision_id' => '1.0.1' },
-              'y' => { 'revision_id' => '1.0.0' }
-            } }
+            policy_group 'x', {
+              'policies' => {
+                'x' => { 'revision_id' => '1.0.1' },
+                'y' => { 'revision_id' => '1.0.0' }
+              }
+            }
             role 'x', { 'run_list' => [ 'blah' ] }
           end
 

@@ -41,12 +41,12 @@ class Chef
 
           def delete(recurse)
             raise NotFoundError.new(self) if !exists?
-            raise DefaultEnvironmentCannotBeModifiedError.new(:delete, self), "#{path_for_printing} cannot be deleted."
+            raise DefaultEnvironmentCannotBeModifiedError.new(:delete, self)
           end
 
           def write(file_contents)
             raise NotFoundError.new(self) if !exists?
-            raise DefaultEnvironmentCannotBeModifiedError.new(:write, self), "#{path_for_printing} cannot be updated."
+            raise DefaultEnvironmentCannotBeModifiedError.new(:write, self)
           end
         end
       end

@@ -54,14 +54,14 @@ class Chef
               make_child_entry("#{key}.json", true)
             end
           rescue Timeout::Error => e
-            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:children, self, e), "Timeout retrieving children: #{e}"
+            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:children, self, e, "Timeout retrieving children: #{e}")
           rescue Net::HTTPServerException => e
             # 404 = NotFoundError
             if $!.response.code == "404"
               raise Chef::ChefFS::FileSystem::NotFoundError.new(self, $!)
             # Anything else is unexpected (OperationFailedError)
             else
-              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:children, self, e), "HTTP error retrieving children: #{e}"
+              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:children, self, e, "HTTP error retrieving children: #{e}")
             end
           end
         end
@@ -74,7 +74,7 @@ class Chef
           begin
             object = Chef::JSONCompat.parse(file_contents)
           rescue Chef::Exceptions::JSON::ParseError => e
-            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e), "Parse error reading JSON creating child '#{name}': #{e}"
+            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e, "Parse error reading JSON creating child '#{name}': #{e}")
           end
 
           # Create the child entry that will be returned
@@ -84,7 +84,7 @@ class Chef
           if data_handler
             object = data_handler.normalize_for_post(object, result)
             data_handler.verify_integrity(object, result) do |error|
-              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self), "Error creating '#{name}': #{error}"
+              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, nil, "Error creating '#{name}': #{error}")
             end
           end
 
@@ -92,17 +92,17 @@ class Chef
           begin
             rest.post(api_path, object)
           rescue Timeout::Error => e
-            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e), "Timeout creating '#{name}': #{e}"
+            raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e, "Timeout creating '#{name}': #{e}")
           rescue Net::HTTPServerException => e
             # 404 = NotFoundError
             if e.response.code == "404"
               raise Chef::ChefFS::FileSystem::NotFoundError.new(self, e)
             # 409 = AlreadyExistsError
             elsif $!.response.code == "409"
-              raise Chef::ChefFS::FileSystem::AlreadyExistsError.new(:create_child, self, e), "Failure creating '#{name}': #{path}/#{name} already exists"
+              raise Chef::ChefFS::FileSystem::AlreadyExistsError.new(:create_child, self, e, "Failure creating '#{name}': #{path}/#{name} already exists")
             # Anything else is unexpected (OperationFailedError)
             else
-              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e), "Failure creating '#{name}': #{e.message}"
+              raise Chef::ChefFS::FileSystem::OperationFailedError.new(:create_child, self, e, "Failure creating '#{name}': #{e.message}")
             end
           end
 
