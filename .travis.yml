@@ -133,6 +133,7 @@ matrix:
       - bundle exec chef-client --version
       - git clone https://github.com/chef/proxy_tests.git
       - cd proxy_tests
+      - git checkout tball/knife_tests
       - bundle exec chef-client -z -o proxy_tests::render
       #- sh /tmp/proxy_tests/setup.sh
       - bundle exec sudo -E bash /tmp/proxy_tests/run_tests.sh chef_client \* \* /tmp/out.txt
