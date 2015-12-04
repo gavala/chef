@@ -1295,12 +1295,13 @@ EOM
           file 'members.json', [ 'bar' ]
           file 'nodes/x.json', {}
           file 'org.json', { 'full_name' => 'wootles' }
-          file 'policies/x-1.0.0.json', {}
-          file 'policy_groups/x.json', { 'policies' => { 'x' => { 'revision_id' => '1.0.0' } } }
+          file 'policies/x-1.0.0.json', { }
+          file 'policies/blah-1.0.0.json', { }
+          file 'policy_groups/x.json', { 'policies' => { 'x' => { 'revision_id' => '1.0.0' }, 'blah' => { 'revision_id' => '1.0.0' } } }
           file 'roles/x.json', {}
         end
 
-        it 'knife upload / uploads everything', :focus do
+        it 'knife upload / uploads everything' do
           knife('upload /').should_succeed <<EOM
 Updated /acls/groups/blah.json
 Created /clients/x.json
@@ -1315,11 +1316,70 @@ Updated /members.json
 Created /nodes/x.json
 Updated /org.json
 Created /policies/x-1.0.0.json
+Created /policies/blah-1.0.0.json
 Created /policy_groups/x.json
 Created /roles/x.json
 EOM
           expect(api.get('association_requests').map { |a| a['username'] }).to eq([ 'foo' ])
           expect(api.get('users').map { |a| a['user']['username'] }).to eq([ 'bar' ])
+        end
+
+        context "When the chef server has an identical copy of each thing" do
+          before do
+            # acl_for %w(organizations foo groups blah)
+            client 'x', {}
+            cookbook 'x', '1.0.0'
+            container 'x', {}
+            data_bag 'x', { 'y' => {} }
+            environment 'x', {}
+            group 'x', {}
+            org_invite 'foo'
+            org_member 'bar'
+            node 'x', {}
+            policy 'x', '1.0.0', {}
+            policy 'blah', '1.0.0', {}
+            policy_group 'x', {
+              'policies' => {
+                'x' => { 'revision_id' => '1.0.0' },
+                'blah' => { 'revision_id' => '1.0.0' }
+              }
+            }
+            role 'x', {}
+          end
+
+          it 'knife upload makes no changes' do
+            knife('upload /').should_succeed <<EOM
+Updated /acls/groups/blah.json
+Updated /org.json
+EOM
+          end
+        end
+
+        context "When the chef server has a slightly different copy of each thing" do
+          before do
+            # acl_for %w(organizations foo groups blah)
+            client 'x', { 'validator' => true }
+            cookbook 'x', '1.0.0', { 'recipes/default.rb' => '' }
+            data_bag 'x', { 'y' => { 'a' => 'b' } }
+            environment 'x', { 'description' => 'foo' }
+            group 'x', { 'groups' => [ 'admin' ] }
+            node 'x', { 'run_list' => [ 'blah' ] }
+            policy 'x', '1.0.0', { 'run_list' => [ 'blah' ] }
+            policy 'x', '1.0.1', { }
+            policy 'y', '1.0.0', { }
+            policy_group 'x', { 'policies' => {
+              'x' => { 'revision_id' => '1.0.1' },
+              'y' => { 'revision_id' => '1.0.0' }
+            } }
+            role 'x', { 'run_list' => [ 'blah' ] }
+          end
+
+          it 'knife upload makes no changes' do
+            knife('upload /').should_succeed <<EOM
+Updated /acls/groups/blah.json
+Updated /org.json
+EOM
+          end
         end
       end
 

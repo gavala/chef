@@ -150,6 +150,8 @@ class Chef
       attr_reader :repo_mode
 
       def create_dir(path, name, *options)
+        puts "create_dir(#{path}, #{name})"
+
         if use_memory_store?(path)
           @memory_store.create_dir(path, name, *options)
         else
@@ -182,6 +184,9 @@ class Chef
       #
 
       def create(path, name, data, *options)
+
+        puts "create #{path}, #{name}, #{data}"
+
         if use_memory_store?(path)
           @memory_store.create(path, name, data, *options)
 
@@ -230,6 +235,7 @@ class Chef
       end
 
       def get(path, request=nil)
+        puts "get(#{path})"
         if use_memory_store?(path)
           @memory_store.get(path)
 
@@ -239,6 +245,22 @@ class Chef
             entry.read
           rescue Chef::ChefFS::FileSystem::NotFoundError => e
             raise ChefZero::DataStore::DataNotFoundError.new(to_zero_path(e.entry), e)
+          end
+
+        # /policy_groups/NAME/policies/POLICYNAME: return the revision of the given policy
+        elsif path[0] == 'policy_groups' && path[2] == 'policies' && path.length == 4
+          with_entry(path[0..1]) do |entry|
+            policy_group = Chef::JSONCompat.parse(entry)
+            if !policy_group['policies'] || !policy_group['policies'][path[3]] || !policy_group['policies'][path[3]]
+              raise ChefZero::DataStore::DataNotFoundError.new(path, entry)
+            end
+            # The policy group looks like:
+            # {
+            #   "policies": {
+            #     "x": { "revision_id": "10" }
+            #   }
+            # }
+            Chef::JSONCompat.to_json_pretty(policy_group['policies'][path[3]]["revision_id"])
           end
 
         # GET [/organizations/ORG]/users/NAME -> /users/NAME
@@ -300,6 +322,7 @@ class Chef
       end
 
       def set(path, data, *options)
+        puts "set(#{path})"
         if use_memory_store?(path)
           @memory_store.set(path, data, *options)
         else
@@ -324,6 +347,7 @@ class Chef
       end
 
       def delete(path)
+        puts "delete(#{path})"
         if use_memory_store?(path)
           @memory_store.delete(path)
 
@@ -365,6 +389,7 @@ class Chef
       end
 
       def delete_dir(path, *options)
+        puts "delete_dir(#{path})"
         if use_memory_store?(path)
           @memory_store.delete_dir(path, *options)
         else
@@ -379,8 +404,20 @@ class Chef
       end
 
       def list(path)
+        puts "list(#{path})"
         if use_memory_store?(path)
           @memory_store.list(path)
+
+        elsif path[0] == 'policy_groups' && path.length == 2
+          with_entry(path) do |entry|
+            [ 'policies' ]
+          end
+
+        elsif path[0] == 'policy_groups' && path[2] == 'policies' && path.length == 3
+          with_entry([ 'policy_groups', path[1] ]) do |entry|
+            policy_group = Chef::JSONCompat.parse(entry.read)
+            (policy_group['policies'] || {}).keys
+          end
 
         elsif path[0] == 'cookbooks' && path.length == 1
           with_entry(path) do |entry|
@@ -432,6 +469,7 @@ class Chef
       end
 
       def exists?(path)
+        puts "exists?(#{path})"
         if use_memory_store?(path)
           @memory_store.exists?(path)
         else
@@ -440,11 +478,20 @@ class Chef
       end
 
       def exists_dir?(path)
+        puts "exists_dir?(#{path})"
         if use_memory_store?(path)
           @memory_store.exists_dir?(path)
         elsif path[0] == 'cookbooks' && path.length == 2
           list([ path[0] ]).include?(path[1])
+        # /policy_groups/NAME/policies
+        elsif path[0] == 'policy_groups' && path[2] == 'policies' && path.length == 3
+          exists_dir?(path[0..1])
+        # /policy_groups/NAME/policies/POLICYNAME
+        elsif path[0] == 'policy_groups' && path[2] == 'policies' && path.length == 4
+          exists_dir?(path[0..1]) && list(path[0..2]).include?(path[3])
         else
+          puts "always: #{path_always_exists?(path)}"
+          puts "checking path: #{to_chef_fs_path(path)}"
           Chef::ChefFS::FileSystem.resolve_path(chef_fs, to_chef_fs_path(path)).exists?
         end
       end
