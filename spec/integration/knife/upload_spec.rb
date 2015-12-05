@@ -1269,7 +1269,7 @@ EOM
       user 'foo', {}
       user 'bar', {}
       user 'foobar', {}
-      organization 'foo', { 'full_name' => 'Something'}
+      organization 'foo', { 'full_name' => 'Something' }
     end
 
     before :each do
@@ -1293,8 +1293,8 @@ EOM
           file 'groups/x.json', {}
           file 'invitations.json', [ 'foo' ]
           file 'members.json', [ 'bar' ]
-          file 'nodes/x.json', {}
           file 'org.json', { 'full_name' => 'wootles' }
+          file 'nodes/x.json', {}
           file 'policies/x-1.0.0.json', { }
           file 'policies/blah-1.0.0.json', { }
           file 'policy_groups/x.json', { 'policies' => { 'x' => { 'revision_id' => '1.0.0' }, 'blah' => { 'revision_id' => '1.0.0' } } }
@@ -1326,6 +1326,10 @@ EOM
 
         context "When the chef server has an identical copy of each thing" do
           before do
+            file 'invitations.json', [ 'foo' ]
+            file 'members.json', [ 'bar' ]
+            file 'org.json', { 'full_name' => 'Something' }
+
             # acl_for %w(organizations foo groups blah)
             client 'x', {}
             cookbook 'x', '1.0.0'
@@ -1350,7 +1354,6 @@ EOM
           it 'knife upload makes no changes' do
             knife('upload /').should_succeed <<EOM
 Updated /acls/groups/blah.json
-Updated /org.json
 EOM
           end
         end

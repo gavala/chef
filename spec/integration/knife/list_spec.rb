@@ -670,6 +670,7 @@ EOM
 /nodes
 /org.json
 /policies
+/policy_groups
 /roles
 EOM
       end
@@ -689,6 +690,7 @@ members.json
 nodes
 org.json
 policies
+policy_groups
 roles
 
 /acls:
@@ -700,7 +702,6 @@ environments
 groups
 nodes
 organization.json
-policies
 roles
 
 /acls/clients:
@@ -733,8 +734,6 @@ clients.json
 users.json
 
 /acls/nodes:
-
-/acls/policies:
 
 /acls/roles:
 
@@ -770,6 +769,8 @@ users.json
 /nodes:
 
 /policies:
+
+/policy_groups:
 
 /roles:
 EOM
@@ -801,6 +802,7 @@ members.json
 nodes
 org.json
 policies
+policy_groups
 roles
 
 /acls:
@@ -812,7 +814,6 @@ environments
 groups
 nodes
 organization.json
-policies
 roles
 
 /acls/clients:
@@ -845,8 +846,6 @@ clients.json
 users.json
 
 /acls/nodes:
-
-/acls/policies:
 
 /acls/roles:
 
@@ -883,6 +882,8 @@ users.json
 
 /policies:
 
+/policy_groups:
+
 /roles:
 EOM
     end
@@ -908,6 +909,8 @@ EOM
         policy 'policy1', '1.2.3', {}
         policy 'policy2', '1.2.3', {}
         policy 'policy2', '1.3.5', {}
+        policy_group 'policy_group1', { 'policies' => { 'policy1' => { 'revision_id' => '1.2.3' } } }
+        policy_group 'policy_group2', { 'policies' => { 'policy2' => { 'revision_id' => '1.3.5' } } }
         role 'role1', {}
         role 'role2', {}
         user 'user1', {}
@@ -956,10 +959,6 @@ EOM
 /acls/nodes/node1.json
 /acls/nodes/node2.json
 /acls/organization.json
-/acls/policies/
-/acls/policies/policy1-1.2.3.json
-/acls/policies/policy2-1.2.3.json
-/acls/policies/policy2-1.3.5.json
 /acls/roles/
 /acls/roles/role1.json
 /acls/roles/role2.json
@@ -1016,6 +1015,9 @@ EOM
 /policies/policy1-1.2.3.json
 /policies/policy2-1.2.3.json
 /policies/policy2-1.3.5.json
+/policy_groups/
+/policy_groups/policy_group1.json
+/policy_groups/policy_group2.json
 /roles/
 /roles/role1.json
 /roles/role2.json

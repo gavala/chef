@@ -967,6 +967,8 @@ EOM
       organization 'foo' do
         container 'x', {}
         group 'x', {}
+        policy 'x', '1.2.3', {}
+        policy_group 'x', { 'policies' => { 'x' => { 'revision_id' => '1.2.3' } } }
       end
     end
 
@@ -975,7 +977,7 @@ EOM
     end
 
     it 'knife delete /acls/containers/environments.json fails with a reasonable error' do
-      knife('delete /acls/containers/environments.json').should_fail "ERROR: /acls/containers/environments.json (remote) cannot be deleted.\n"
+      knife('delete /acls/containers/environments.json').should_fail "ERROR: /acls/containers/environments.json (remote) ACLs cannot be deleted.\n"
     end
 
     it 'knife delete /containers/x.json succeeds' do
@@ -986,6 +988,16 @@ EOM
     it 'knife delete /groups/x.json succeeds' do
       knife('delete /groups/x.json').should_succeed "Deleted /groups/x.json\n"
       knife('raw /groups/x.json').should_fail(/404/)
+    end
+
+    it 'knife delete /policies/x-1.2.3.json succeeds' do
+      knife('delete /policies/x-1.2.3.json').should_succeed "Deleted /policies/x-1.2.3.json\n"
+      knife('raw /policies/x-1.2.3.json').should_fail(/404/)
+    end
+
+    it 'knife delete /policy_groups/x.json succeeds' do
+      knife('delete /policy_groups/x.json').should_succeed "Deleted /policy_groups/x.json\n"
+      knife('raw /policy_groups/x.json').should_fail(/404/)
     end
 
     it 'knife delete /org.json fails with a reasonable error' do
