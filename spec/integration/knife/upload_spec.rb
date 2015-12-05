@@ -1350,21 +1350,7 @@ EOM
           it 'knife upload makes no changes' do
             knife('upload /').should_succeed <<EOM
 Updated /acls/groups/blah.json
-Updated /clients/x.json
-Updated /containers/x.json
-Updated /cookbooks/x
-Updated /data_bags/x
-Updated /data_bags/x/y.json
-Updated /environments/x.json
-Updated /groups/x.json
-Updated /invitations.json
-Updated /members.json
-Updated /nodes/x.json
 Updated /org.json
-Updated /policies/blah-1.0.0.json
-Updated /policies/x-1.0.0.json
-Updated /policy_groups/x.json
-Updated /roles/x.json
 EOM
           end
         end
@@ -1385,6 +1371,7 @@ EOM
           before do
             # acl_for %w(organizations foo groups blah)
             client 'x', { 'validator' => true }
+            container 'x', {}
             cookbook 'x', '1.0.0', { 'recipes' => { 'default.rb' => '' } }
             data_bag 'x', { 'y' => { 'a' => 'b' } }
             environment 'x', { 'description' => 'foo' }
@@ -1402,11 +1389,23 @@ EOM
             role 'x', { 'run_list' => [ 'blah' ] }
           end
 
-          it 'knife upload makes no changes' do
+          it 'knife upload updates everything' do
             knife('upload /').should_succeed <<EOM
 Updated /acls/groups/blah.json
+Updated /clients/x.json
+Updated /cookbooks/x
+Updated /data_bags/x/y.json
+Updated /environments/x.json
+Updated /groups/x.json
+Updated /invitations.json
+Updated /members.json
+Updated /nodes/x.json
 Updated /org.json
+Created /policies/blah-1.0.0.json
+Updated /policy_groups/x.json
+Updated /roles/x.json
 EOM
+            knife('diff --name-status --diff-filter=AMT /').should_succeed ''
           end
         end
       end
