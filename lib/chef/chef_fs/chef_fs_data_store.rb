@@ -150,8 +150,6 @@ class Chef
       attr_reader :repo_mode
 
       def create_dir(path, name, *options)
-        puts "create_dir(#{path}, #{name})"
-
         if use_memory_store?(path)
           @memory_store.create_dir(path, name, *options)
         else
@@ -184,9 +182,6 @@ class Chef
       #
 
       def create(path, name, data, *options)
-
-        puts "create #{path}, #{name}, #{data}"
-
         if use_memory_store?(path)
           @memory_store.create(path, name, data, *options)
 
@@ -235,7 +230,6 @@ class Chef
       end
 
       def get(path, request=nil)
-        puts "get(#{path})"
         if use_memory_store?(path)
           @memory_store.get(path)
 
@@ -322,7 +316,6 @@ class Chef
       end
 
       def set(path, data, *options)
-        puts "set(#{path})"
         if use_memory_store?(path)
           @memory_store.set(path, data, *options)
         else
@@ -347,7 +340,6 @@ class Chef
       end
 
       def delete(path)
-        puts "delete(#{path})"
         if use_memory_store?(path)
           @memory_store.delete(path)
 
@@ -389,7 +381,6 @@ class Chef
       end
 
       def delete_dir(path, *options)
-        puts "delete_dir(#{path})"
         if use_memory_store?(path)
           @memory_store.delete_dir(path, *options)
         else
@@ -404,7 +395,6 @@ class Chef
       end
 
       def list(path)
-        puts "list(#{path})"
         if use_memory_store?(path)
           @memory_store.list(path)
 
@@ -469,7 +459,6 @@ class Chef
       end
 
       def exists?(path)
-        puts "exists?(#{path})"
         if use_memory_store?(path)
           @memory_store.exists?(path)
         else
@@ -478,7 +467,6 @@ class Chef
       end
 
       def exists_dir?(path)
-        puts "exists_dir?(#{path})"
         if use_memory_store?(path)
           @memory_store.exists_dir?(path)
         elsif path[0] == 'cookbooks' && path.length == 2
@@ -490,8 +478,6 @@ class Chef
         elsif path[0] == 'policy_groups' && path[2] == 'policies' && path.length == 4
           exists_dir?(path[0..1]) && list(path[0..2]).include?(path[3])
         else
-          puts "always: #{path_always_exists?(path)}"
-          puts "checking path: #{to_chef_fs_path(path)}"
           Chef::ChefFS::FileSystem.resolve_path(chef_fs, to_chef_fs_path(path)).exists?
         end
       end
