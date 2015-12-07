@@ -94,6 +94,7 @@ describe Chef::ApiClient::Registration do
 
   it "has an HTTP client configured with validator credentials" do
     expect(registration.http_api).to be_a_kind_of(Chef::ServerAPI)
+    expect(registration.http_api.options[:client_name]).to eq("test-validator")
   end
 
   describe "when creating/updating the client on the server" do
