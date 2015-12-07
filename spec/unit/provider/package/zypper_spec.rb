@@ -34,7 +34,7 @@ describe Chef::Provider::Package::Zypper do
 
   before(:each) do
     allow(Chef::Resource::Package).to receive(:new).and_return(current_resource)
-    allow(provider).to receive(:shell_out).and_return(status)
+    allow(provider).to receive(:shell_out!).and_return(status)
     allow(provider).to receive(:`).and_return("2.0")
   end
 
@@ -60,7 +60,7 @@ describe Chef::Provider::Package::Zypper do
     end
 
     it "should run zypper info with the package name" do
-      shell_out_expectation(
+      shell_out_expectation!(
         "zypper --non-interactive info #{new_resource.package_name}"
       ).and_return(status)
       provider.load_current_resource
@@ -75,7 +75,7 @@ describe Chef::Provider::Package::Zypper do
     it "should set the installed version if zypper info has one" do
       status = double(:stdout => "Version: 1.0\nInstalled: Yes\n", :exitstatus => 0)
 
-      allow(provider).to receive(:shell_out).and_return(status)
+      allow(provider).to receive(:shell_out!).and_return(status)
       expect(current_resource).to receive(:version).with(["1.0"]).and_return(true)
       provider.load_current_resource
     end
@@ -83,7 +83,7 @@ describe Chef::Provider::Package::Zypper do
     it "should set the candidate version if zypper info has one" do
       status = double(:stdout => "Version: 1.0\nInstalled: No\nStatus: out-of-date (version 0.9 installed)", :exitstatus => 0)
 
-      allow(provider).to receive(:shell_out).and_return(status)
+      allow(provider).to receive(:shell_out!).and_return(status)
       provider.load_current_resource
       expect(provider.candidate_version).to eql(["1.0"])
     end
