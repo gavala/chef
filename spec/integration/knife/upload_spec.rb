@@ -1279,7 +1279,7 @@ EOM
     context 'and has nothing but a single group named blah' do
       group 'blah', {}
 
-      when_the_repository 'has one of each thing' do
+      when_the_repository 'has at least one of each thing' do
 
         before do
           # TODO We have to upload acls for an existing group due to a lack of
