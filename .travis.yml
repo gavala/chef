@@ -47,7 +47,7 @@ matrix:
       - bundle env
       - bundle exec chef-client --version
       - git clone -b tball/knife_tests https://github.com/chef/proxy_tests.git
-      - bundle exec sudo -E bash $PROXY_TESTS_DIR/run_tests.sh chef_client \* \* /tmp/out.txt
+      - sudo -E bundle exec bash $PROXY_TESTS_DIR/run_tests.sh chef_client \* \* /tmp/out.txt
     after_script:
       - cat /tmp/out.txt
       - sudo cat /var/log/squid3/cache.log
