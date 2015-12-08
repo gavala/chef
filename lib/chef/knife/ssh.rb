@@ -102,6 +102,17 @@ class Chef
         :long => "--ssh-identity-file IDENTITY_FILE",
         :description => "The SSH identity file used for authentication"
 
+      option :ssh_keepalive,
+        :long        => '--[no-]ssh-keepalive',
+        :description => 'Use ssh keepalive',
+        :default     => false
+ 
+      option :ssh_keepalive_interval,
+        :long        => '--ssh-keepalive-interval SECONDS',
+        :description => 'The ssh keepalive interval',
+        :default     => 300,
+        :proc        => Proc.new { |v| v.to_i }
+
       option :host_key_verify,
         :long => "--[no-]host-key-verify",
         :description => "Verify host key, enabled by default.",
@@ -247,6 +258,10 @@ class Chef
           if !config[:host_key_verify]
             opts[:paranoid] = false
             opts[:user_known_hosts_file] = '/dev/null'
+          end
+          if config[:ssh_keepalive]
+            opts[:keepalive] = config[:ssh_keepalive]
+            opts[:keepalive_interval] = config[:ssh_keepalive_interval]
           end
         end
       end
